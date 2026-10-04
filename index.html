@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajedrez Cyberpunk - Dos Jugadores</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --neon-cyan:#00f0ff; --neon-green:#39ff14; --neon-purple:#bf00ff; --neon-red:#ff073a;
+  --bg-deep:#050510;
+}
+body{
+  font-family:'JetBrains Mono',Consolas,'Courier New',monospace;
+  background:var(--bg-deep);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(0,240,255,.04) 0 1px,transparent 1px 40px),
+    repeating-linear-gradient(90deg,rgba(191,0,255,.04) 0 1px,transparent 1px 40px),
+    radial-gradient(ellipse at 50% -10%,#1a0b3d 0%,transparent 60%),
+    radial-gradient(ellipse at 50% 110%,#032b3a 0%,transparent 60%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;color:#e8f6ff;overflow-x:hidden;
+}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.7}
+.container{width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;align-items:center;position:relative;z-index:1}
+h1{font-size:22px;font-weight:700;text-align:center;letter-spacing:3px;text-transform:uppercase;
+  color:#fff;text-shadow:0 0 8px var(--neon-cyan),0 0 24px var(--neon-purple),2px 2px 0 #000}
+h1 span{color:var(--neon-green);text-shadow:0 0 10px var(--neon-green)}
+.info-panel{width:100%;background:rgba(5,10,25,.85);border:1px solid var(--neon-cyan);
+  border-radius:8px;padding:12px 16px;min-height:56px;display:flex;align-items:center;justify-content:center;
+  text-align:center;font-size:15px;line-height:1.4;position:relative;overflow:hidden;
+  box-shadow:0 0 12px rgba(0,240,255,.5),inset 0 0 18px rgba(0,240,255,.08)}
+.info-panel::after{content:'';position:absolute;left:0;right:0;height:22px;top:-30px;
+  background:linear-gradient(180deg,transparent,rgba(0,240,255,.25),transparent);
+  animation:scan 3s linear infinite;pointer-events:none}
+@keyframes scan{to{transform:translateY(160px)}}
+#status-text{color:#dffaff;text-shadow:0 0 6px rgba(0,240,255,.8);animation:flicker 4s infinite}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.6}94%{opacity:1}96%{opacity:.75}97%{opacity:1}}
+.info-panel.check{border-color:var(--neon-red);box-shadow:0 0 18px var(--neon-red),inset 0 0 22px rgba(255,7,58,.25);animation:checkBlink .7s steps(2) infinite}
+.info-panel.check #status-text{color:#ffdfe6;text-shadow:0 0 10px var(--neon-red)}
+@keyframes checkBlink{50%{box-shadow:0 0 4px var(--neon-red)}}
+.board-wrapper{width:100%;max-width:450px;position:relative;border-radius:8px;padding:8px;
+  background:linear-gradient(135deg,#0a0a1a,#141433);
+  border:1px solid rgba(0,240,255,.6);
+  box-shadow:0 0 18px rgba(0,240,255,.45),0 0 42px rgba(191,0,255,.3),0 10px 30px rgba(0,0,0,.7)}
+#myBoard{width:100%}
+/* casillas metalicas */
+#myBoard .white-1e1d7{background:linear-gradient(135deg,#e8edf5 0%,#b9c4d6 45%,#dfe7f2 100%)!important}
+#myBoard .black-3c85d{background:linear-gradient(135deg,#3a4358 0%,#1c2233 50%,#2e3a55 100%)!important}
+#myBoard .square-55d63{position:relative;transition:filter .15s ease,box-shadow .15s ease}
+#myBoard .square-55d63:hover{filter:brightness(1.25);box-shadow:inset 0 0 0 3px var(--neon-green),inset 0 0 18px var(--neon-green);cursor:pointer;z-index:2}
+#myBoard .square-55d63.selected{box-shadow:inset 0 0 0 3px var(--neon-cyan),inset 0 0 22px var(--neon-cyan)!important;animation:pulse-neon 1.1s ease-in-out infinite}
+@keyframes pulse-neon{0%,100%{box-shadow:inset 0 0 0 3px var(--neon-cyan),inset 0 0 14px var(--neon-cyan)}50%{box-shadow:inset 0 0 0 3px var(--neon-cyan),inset 0 0 30px var(--neon-cyan),inset 0 0 44px rgba(0,240,255,.7)}}
+/* piezas futuristas con filtros neon */
+#myBoard img{transition:transform .25s ease,filter .2s ease!important}
+#myBoard img[data-piece^="w"]{filter:drop-shadow(0 0 4px var(--neon-cyan)) drop-shadow(0 2px 2px #000) brightness(1.12) saturate(1.2)}
+#myBoard img[data-piece^="b"]{filter:drop-shadow(0 0 5px var(--neon-purple)) drop-shadow(0 2px 2px #000) brightness(1.05) saturate(1.3)}
+#myBoard img:not([data-piece]){filter:drop-shadow(0 0 4px var(--neon-cyan)) drop-shadow(0 2px 2px #000)}
+#myBoard .square-55d63.king-in-check img{animation:kingShake .4s linear infinite;filter:drop-shadow(0 0 10px var(--neon-red)) brightness(1.3)!important}
+@keyframes kingShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px) rotate(-3deg)}75%{transform:translateX(2px) rotate(3deg)}}
+/* explosion captura */
+.capture-flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(0,240,255,.7) 30%,transparent 70%);animation:flashOut .45s ease-out forwards;z-index:5}
+@keyframes flashOut{from{opacity:1;transform:scale(.6)}to{opacity:0;transform:scale(1.6)}}
+.burst-p{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:6;animation:burst .6s ease-out forwards}
+@keyframes burst{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.controls{width:100%;display:flex;justify-content:center;position:relative;z-index:1}
+#newGameBtn{font-family:inherit;background:linear-gradient(135deg,#003b47 0%,#0a0a2a 60%),linear-gradient(135deg,var(--neon-cyan),var(--neon-purple));
+  background-blend-mode:overlay;color:#fff;border:1px solid var(--neon-cyan);padding:11px 30px;font-size:15px;font-weight:700;
+  border-radius:6px;cursor:pointer;letter-spacing:2px;text-transform:uppercase;position:relative;overflow:hidden;
+  box-shadow:0 0 14px rgba(0,240,255,.6);transition:all .2s ease}
+#newGameBtn::before{content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg)}
+#newGameBtn:hover::before{animation:loadShine .8s linear infinite}
+@keyframes loadShine{to{left:130%}}
+#newGameBtn:hover{box-shadow:0 0 24px var(--neon-cyan),0 0 44px rgba(191,0,255,.5);transform:translateY(-2px)}
+#newGameBtn:active{animation:btnPulse .35s ease}
+@keyframes btnPulse{0%{box-shadow:0 0 0 0 rgba(0,240,255,.8)}100%{box-shadow:0 0 0 18px rgba(0,240,255,0)}}
+/* overlay game over glitch */
+#gameOverOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  background:rgba(3,0,12,.82);backdrop-filter:blur(4px);z-index:50;text-align:center;padding:20px}
+#gameOverOverlay.show{display:flex}
+.glitch{font-size:clamp(38px,9vw,72px);font-weight:900;letter-spacing:4px;color:#fff;position:relative;
+  text-shadow:0 0 12px var(--neon-cyan),0 0 40px var(--neon-purple);animation:buildBlocks .7s steps(8) both}
+@keyframes buildBlocks{from{clip-path:inset(0 100% 0 0);transform:translateX(-18px)}to{clip-path:inset(0 0 0 0);transform:none}}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;inset:0;overflow:hidden}
+.glitch::before{color:var(--neon-cyan);animation:glitchA 1.2s infinite linear alternate;clip-path:inset(10% 0 55% 0)}
+.glitch::after{color:var(--neon-red);animation:glitchB 1.1s infinite linear alternate;clip-path:inset(60% 0 5% 0)}
+@keyframes glitchA{0%{transform:translate(-3px,-2px)}100%{transform:translate(3px,2px)}}
+@keyframes glitchB{0%{transform:translate(3px,1px)}100%{transform:translate(-3px,-1px)}}
+#gameOverSub{color:var(--neon-green);text-shadow:0 0 10px var(--neon-green);font-size:16px}
+@media(max-width:480px){body{padding:12px}h1{font-size:17px}.info-panel{font-size:13px}#newGameBtn{font-size:13px;padding:10px 22px}}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<div class="container">
+  <h1>♞ Ajedrez <span>Cyberpunk</span></h1>
+  <div class="info-panel" id="infoPanel"><span id="status-text">Cargando...</span></div>
+  <div class="board-wrapper"><div id="myBoard"></div></div>
+  <div class="controls"><button id="newGameBtn" type="button">▶ Nueva Partida</button></div>
+</div>
+<div id="gameOverOverlay"><div class="glitch" id="glitchText" data-text="GAME OVER">GAME OVER</div><div id="gameOverSub"></div></div>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+<script>
+const board = ChessBoard('myBoard',{draggable:true,position:'start',moveSpeed:'slow',
+  pieceTheme:'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png',
+  onDragStart:onDragStart,onDrop:onDrop,onSnapEnd:onSnapEnd});
+const game = new Chess();
+const statusText = document.getElementById('status-text');
+const infoPanel = document.getElementById('infoPanel');
+const overlay = document.getElementById('gameOverOverlay');
+const glitchText = document.getElementById('glitchText');
+const gameOverSub = document.getElementById('gameOverSub');
+const newGameBtn = document.getElementById('newGameBtn');
+let selectedSquare = null;
+
+function playBlip(freq){try{
+  const Ctx = window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+  const ctx = new Ctx(); const o = ctx.createOscillator(); const g = ctx.createGain();
+  o.type='square'; o.frequency.value=freq||440; g.gain.value=0.04;
+  o.connect(g); g.connect(ctx.destination); o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.15); o.stop(ctx.currentTime+0.16);
+  setTimeout(()=>ctx.close(),300);
+}catch(e){}}
+
+function squareEl(sq){
+  return document.querySelector('.square-'+sq) || document.querySelector('[data-square="'+sq+'"]');
+}
+function clearMarks(){document.querySelectorAll('.square-55d63.selected,.square-55d63.king-in-check').forEach(el=>el.classList.remove('selected','king-in-check'));}
+function findKing(color){
+  const b = game.board();
+  for(let r=0;r<8;r++) for(let f=0;f<8;f++){const p=b[r][f];
+    if(p && p.type==='k' && p.color===color){return 'abcdefgh'[f]+(8-r);}}
+  return null;
+}
+function captureEffect(sq){
+  const el = squareEl(sq); if(!el) return;
+  el.style.position='relative';
+  const flash=document.createElement('div'); flash.className='capture-flash'; el.appendChild(flash);
+  setTimeout(()=>flash.remove(),500);
+  const colors=['#00f0ff','#39ff14','#bf00ff','#ffffff','#ff073a'];
+  for(let i=0;i<14;i++){
+    const s=document.createElement('span'); s.className='burst-p';
+    const c=colors[i%colors.length]; s.style.background=c; s.style.boxShadow='0 0 8px '+c;
+    s.style.left='50%'; s.style.top='50%';
+    const a=(Math.PI*2*i)/14 + Math.random()*.5; const d=34+Math.random()*44;
+    s.style.setProperty('--dx',Math.cos(a)*d+'px'); s.style.setProperty('--dy',Math.sin(a)*d+'px');
+    el.appendChild(s); setTimeout(()=>s.remove(),650);
+  }
+  playBlip(180);
+}
+function updateStatus(){
+  let status=''; let moveColor = game.turn()==='b' ? 'Negras' : 'Blancas';
+  clearMarks(); infoPanel.classList.remove('check'); overlay.classList.remove('show');
+  if(game.in_checkmate()){
+    const winner = game.turn()==='w' ? 'Negras' : 'Blancas';
+    status='Jaque Mate! Ganador: '+winner+'.';
+    glitchText.textContent='GAME OVER'; glitchText.setAttribute('data-text','GAME OVER');
+    gameOverSub.textContent='♛ '+winner+' gana la partida';
+    overlay.classList.add('show'); playBlip(120);
+  } else if(game.in_draw()){
+    status='Tablas/Empate';
+    if(game.in_stalemate()) status='Tablas por ahogado';
+    else if(game.in_threefold_repetition()) status='Tablas por repetición triple';
+    else if(game.insufficient_material()) status='Tablas por material insuficiente';
+    glitchText.textContent='DRAW'; glitchText.setAttribute('data-text','DRAW');
+    gameOverSub.textContent=status; overlay.classList.add('show');
+  } else {
+    status='Turno: '+moveColor;
+    if(game.in_check()){
+      status+=' - ¡Jaque!';
+      infoPanel.classList.add('check');
+      const ksq=findKing(game.turn()); const kel=ksq && squareEl(ksq);
+      if(kel) kel.classList.add('king-in-check');
+      playBlip(660);
+    }
+  }
+  statusText.textContent=status;
+}
+function onDragStart(source,piece){
+  if(game.game_over()) return false;
+  if((game.turn()==='w'&&piece.search(/^b/)!==-1)||(game.turn()==='b'&&piece.search(/^w/)!==-1)) return false;
+  clearMarksSelectedOnly();
+  const el=squareEl(source); if(el) el.classList.add('selected');
+  selectedSquare=source;
+}
+function clearMarksSelectedOnly(){document.querySelectorAll('.square-55d63.selected').forEach(el=>el.classList.remove('selected'));}
+function onDrop(source,target){
+  const move=game.move({from:source,to:target,promotion:'q'});
+  if(move===null) return 'snapback';
+  if(move.captured) captureEffect(target); else playBlip(520);
+  updateStatus();
+}
+function onSnapEnd(){board.position(game.fen());updateStatus();}
+function startNewGame(){game.reset();board.start();overlay.classList.remove('show');clearMarks();playBlip(880);updateStatus();}
+newGameBtn.addEventListener('click',startNewGame);
+overlay.addEventListener('click',()=>overlay.classList.remove('show'));
+
+/* particulas flotantes */
+(function(){
+  const cv=document.getElementById('particles'); const ctx=cv.getContext('2d');
+  let W,H,parts=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  resize(); addEventListener('resize',resize);
+  for(let i=0;i<65;i++) parts.push({x:Math.random()*2000,y:Math.random()*1200,r:Math.random()*2.2+.4,
+    vx:(Math.random()-.5)*.25,vy:-Math.random()*.35-.05,
+    c:Math.random()<.45?'0,240,255':(Math.random()<.5?'191,0,255':'57,255,20'),a:Math.random()*.5+.15});
+  (function loop(){
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.x+=p.vx;p.y+=p.vy; if(p.y<-10){p.y=H+10;p.x=Math.random()*W;} if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+      ctx.beginPath();ctx.arc(p.x%W,p.y, p.r,0,7);ctx.fillStyle='rgba('+p.c+','+p.a+')';
+      ctx.shadowColor='rgba('+p.c+',.9)';ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+updateStatus();
+</script>
+</body>
+</html>
