@@ -1,8 +1,16 @@
-# Ajedrez Cyberpunk — 2 jugadores local
 
-Juego de ajedrez local (mismo dispositivo) en un único `index.html`, con estética Dark Sci-Fi / neón y lógica completa de reglas.
+### 🕹️ Proyecto Destacado / Easter Egg   
+
+#### ♟️ [Ajedrez Cyberpunk (2 Jugadores)](https://elbaneira.github.io/Ajedrez_web/)
+Un juego de ajedrez interactivo diseñado con estética neón / cyberpunk. Permite partidas locales para dos jugadores con validación de movimientos y un diseño moderno e interactivo  en un único `index.html`, con estética Dark Sci-Fi / neón y lógica completa de reglas..
+
+* **Demo en vivo:** [Ver Ajedrez Cyberpunk ↗](https://elbaneira.github.io/Ajedrez_web/)
+
+---
 
 Abrir `index.html` directo en el navegador. Sin servidor, sin build.
+
+---
 
 ## Arquitectura
 
